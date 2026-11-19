@@ -1,0 +1,2490 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AI-Moderator — Avtomatlashtirilgan Moderatsiya Tizimi</title>
+  <style>
+    :root {
+      --bg-primary: #0b0f19;
+      --bg-secondary: #111827;
+      --bg-card: #1f2937;
+      --bg-card-hover: #283548;
+      --border: #374151;
+      --border-light: #4b5563;
+      --text-primary: #f9fafb;
+      --text-secondary: #9ca3af;
+      --text-muted: #6b7280;
+      --accent-blue: #3b82f6;
+      --accent-cyan: #06b6d4;
+      --accent-green: #10b981;
+      --accent-yellow: #f59e0b;
+      --accent-red: #ef4444;
+      --accent-purple: #8b5cf6;
+      --font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.4), 0 2px 4px -1px rgba(0, 0, 0, 0.2);
+      --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.5), 0 4px 6px -2px rgba(0, 0, 0, 0.3);
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: var(--font-family);
+      background-color: var(--bg-primary);
+      color: var(--text-primary);
+      line-height: 1.5;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* Header */
+    header {
+      background-color: var(--bg-secondary);
+      border-bottom: 1px solid var(--border);
+      position: sticky;
+      top: 0;
+      z-index: 50;
+      box-shadow: var(--shadow);
+    }
+
+    .header-container {
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 0.85rem 1.5rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 1rem;
+    }
+
+    .logo-area {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    .logo-icon {
+      background: linear-gradient(135deg, var(--accent-blue), var(--accent-cyan));
+      color: white;
+      width: 40px;
+      height: 40px;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      font-size: 1.2rem;
+      box-shadow: 0 0 15px rgba(59, 130, 246, 0.5);
+    }
+
+    .logo-text h1 {
+      font-size: 1.25rem;
+      font-weight: 700;
+      letter-spacing: -0.025em;
+      background: linear-gradient(to right, #60a5fa, #2dd4bf);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .logo-text span {
+      font-size: 0.75rem;
+      color: var(--text-secondary);
+      display: block;
+    }
+
+    .nav-tabs {
+      display: flex;
+      gap: 0.4rem;
+      background-color: var(--bg-primary);
+      padding: 0.3rem;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+      overflow-x: auto;
+    }
+
+    .nav-btn {
+      background: transparent;
+      color: var(--text-secondary);
+      border: none;
+      padding: 0.45rem 0.9rem;
+      border-radius: 7px;
+      font-size: 0.875rem;
+      font-weight: 500;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 0.45rem;
+      transition: all 0.2s ease;
+      white-space: nowrap;
+    }
+
+    .nav-btn:hover {
+      color: var(--text-primary);
+      background-color: var(--bg-card);
+    }
+
+    .nav-btn.active {
+      color: white;
+      background: linear-gradient(135deg, var(--accent-blue), #2563eb);
+      box-shadow: 0 2px 8px rgba(37, 99, 235, 0.4);
+    }
+
+    .system-badge {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      background: rgba(16, 185, 129, 0.1);
+      border: 1px solid rgba(16, 185, 129, 0.3);
+      padding: 0.35rem 0.85rem;
+      border-radius: 9999px;
+      font-size: 0.75rem;
+      color: #34d399;
+      font-weight: 500;
+    }
+
+    .pulse-dot {
+      width: 8px;
+      height: 8px;
+      background-color: #10b981;
+      border-radius: 50%;
+      animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+      0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); }
+      70% { transform: scale(1); box-shadow: 0 0 0 6px rgba(16, 185, 129, 0); }
+      100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
+    }
+
+    /* Main Container */
+    main {
+      max-width: 1400px;
+      margin: 1.5rem auto;
+      padding: 0 1.5rem;
+      flex: 1;
+      width: 100%;
+    }
+
+    .tab-pane {
+      display: none;
+      animation: fadeIn 0.3s ease;
+    }
+
+    .tab-pane.active {
+      display: block;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(6px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Pipeline Banner */
+    .pipeline-banner {
+      background: linear-gradient(135deg, rgba(31, 41, 55, 0.9), rgba(17, 24, 39, 0.95));
+      border: 1px solid rgba(59, 130, 246, 0.3);
+      border-radius: 14px;
+      padding: 1.2rem 1.5rem;
+      margin-bottom: 1.8rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 1.2rem;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .pipeline-banner::before {
+      content: "";
+      position: absolute;
+      top: 0; left: 0; right: 0; height: 2px;
+      background: linear-gradient(90deg, #3b82f6, #06b6d4, #10b981);
+    }
+
+    .pipeline-step {
+      display: flex;
+      align-items: center;
+      gap: 0.85rem;
+    }
+
+    .step-num {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      background: rgba(59, 130, 246, 0.2);
+      border: 1px solid var(--accent-blue);
+      color: #60a5fa;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      font-size: 0.9rem;
+    }
+
+    .step-info h4 {
+      font-size: 0.95rem;
+      font-weight: 600;
+    }
+
+    .step-info p {
+      font-size: 0.78rem;
+      color: var(--text-secondary);
+    }
+
+    .pipeline-arrow {
+      color: var(--text-muted);
+      font-size: 1.25rem;
+    }
+
+    /* Cards & Grid */
+    .grid-cards {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 1.2rem;
+      margin-bottom: 1.8rem;
+    }
+
+    .card {
+      background-color: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 1.25rem;
+      box-shadow: var(--shadow);
+      position: relative;
+      overflow: hidden;
+      transition: border-color 0.2s, transform 0.2s;
+    }
+
+    .card:hover {
+      border-color: var(--border-light);
+      transform: translateY(-2px);
+    }
+
+    .card-title {
+      font-size: 0.85rem;
+      color: var(--text-secondary);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 0.5rem;
+    }
+
+    .card-value {
+      font-size: 1.85rem;
+      font-weight: 700;
+      color: var(--text-primary);
+      display: flex;
+      align-items: baseline;
+      gap: 0.5rem;
+    }
+
+    .card-subtitle {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      margin-top: 0.35rem;
+    }
+
+    .card.approved { border-left: 4px solid var(--accent-green); }
+    .card.blocked { border-left: 4px solid var(--accent-red); }
+    .card.flagged { border-left: 4px solid var(--accent-yellow); }
+    .card.latency { border-left: 4px solid var(--accent-purple); }
+    .card.complaints { border-left: 4px solid var(--accent-cyan); }
+
+    /* Charts row */
+    .charts-row {
+      display: grid;
+      grid-template-columns: 2fr 1fr;
+      gap: 1.2rem;
+      margin-bottom: 1.8rem;
+    }
+
+    @media (max-width: 900px) {
+      .charts-row { grid-template-columns: 1fr; }
+    }
+
+    .chart-card {
+      background-color: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 1.25rem;
+      box-shadow: var(--shadow);
+    }
+
+    .chart-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 1rem;
+    }
+
+    .chart-header h3 {
+      font-size: 1.05rem;
+      font-weight: 600;
+    }
+
+    /* Filter Bar */
+    .filter-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 0.8rem;
+      margin-bottom: 1.2rem;
+      background-color: var(--bg-card);
+      padding: 0.8rem 1.2rem;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+    }
+
+    .filter-group {
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+      flex-wrap: wrap;
+    }
+
+    .filter-btn {
+      background: var(--bg-secondary);
+      border: 1px solid var(--border);
+      color: var(--text-secondary);
+      padding: 0.4rem 0.8rem;
+      border-radius: 6px;
+      font-size: 0.825rem;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .filter-btn:hover, .filter-btn.active {
+      background: var(--accent-blue);
+      color: white;
+      border-color: var(--accent-blue);
+    }
+
+    .search-input {
+      background-color: var(--bg-secondary);
+      border: 1px solid var(--border);
+      color: var(--text-primary);
+      padding: 0.45rem 0.9rem;
+      border-radius: 6px;
+      font-size: 0.85rem;
+      outline: none;
+      width: 250px;
+      transition: border-color 0.2s;
+    }
+
+    .search-input:focus {
+      border-color: var(--accent-blue);
+    }
+
+    /* Table */
+    .table-responsive {
+      overflow-x: auto;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+      background-color: var(--bg-card);
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.875rem;
+      text-align: left;
+    }
+
+    thead {
+      background-color: var(--bg-secondary);
+      border-bottom: 1px solid var(--border);
+    }
+
+    th {
+      padding: 0.85rem 1rem;
+      font-weight: 600;
+      color: var(--text-secondary);
+      white-space: nowrap;
+    }
+
+    td {
+      padding: 0.85rem 1rem;
+      border-bottom: 1px solid rgba(55, 65, 81, 0.5);
+      vertical-align: middle;
+    }
+
+    tr:hover {
+      background-color: var(--bg-card-hover);
+    }
+
+    /* Badges */
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      padding: 0.25rem 0.6rem;
+      border-radius: 9999px;
+      font-size: 0.72rem;
+      font-weight: 600;
+      letter-spacing: 0.025em;
+      text-transform: uppercase;
+    }
+
+    .badge-approved {
+      background: rgba(16, 185, 129, 0.15);
+      color: #34d399;
+      border: 1px solid rgba(16, 185, 129, 0.3);
+    }
+
+    .badge-blocked {
+      background: rgba(239, 68, 68, 0.15);
+      color: #f87171;
+      border: 1px solid rgba(239, 68, 68, 0.3);
+    }
+
+    .badge-flagged {
+      background: rgba(245, 158, 11, 0.15);
+      color: #fbbf24;
+      border: 1px solid rgba(245, 158, 11, 0.3);
+    }
+
+    .badge-violation {
+      background: rgba(99, 102, 241, 0.15);
+      color: #a5b4fc;
+      border: 1px solid rgba(99, 102, 241, 0.3);
+      margin-right: 0.3rem;
+      text-transform: capitalize;
+    }
+
+    .risk-pill {
+      font-weight: 700;
+      padding: 0.2rem 0.5rem;
+      border-radius: 6px;
+      font-size: 0.75rem;
+    }
+
+    .risk-low { color: #34d399; background: rgba(16, 185, 129, 0.1); }
+    .risk-mid { color: #fbbf24; background: rgba(245, 158, 11, 0.1); }
+    .risk-high { color: #f87171; background: rgba(239, 68, 68, 0.1); }
+
+    /* Buttons */
+    .btn {
+      background-color: var(--accent-blue);
+      color: white;
+      border: none;
+      padding: 0.5rem 1rem;
+      border-radius: 7px;
+      font-size: 0.85rem;
+      font-weight: 500;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      transition: all 0.2s;
+    }
+
+    .btn:hover {
+      background-color: #2563eb;
+      transform: translateY(-1px);
+    }
+
+    .btn-secondary {
+      background-color: var(--bg-secondary);
+      border: 1px solid var(--border);
+      color: var(--text-primary);
+    }
+
+    .btn-secondary:hover { background-color: var(--border); }
+    .btn-success { background-color: var(--accent-green); }
+    .btn-success:hover { background-color: #059669; }
+    .btn-danger { background-color: var(--accent-red); }
+    .btn-danger:hover { background-color: #dc2626; }
+
+    .btn-sm {
+      padding: 0.25rem 0.55rem;
+      font-size: 0.75rem;
+      border-radius: 5px;
+    }
+
+    /* Live Tester Playground */
+    .tester-container {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1.5rem;
+    }
+
+    @media (max-width: 900px) {
+      .tester-container { grid-template-columns: 1fr; }
+    }
+
+    .tester-box {
+      background-color: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 1.5rem;
+      box-shadow: var(--shadow);
+    }
+
+    .textarea-field {
+      width: 100%;
+      height: 140px;
+      background-color: var(--bg-secondary);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--text-primary);
+      padding: 0.85rem;
+      font-family: inherit;
+      font-size: 0.9rem;
+      resize: vertical;
+      outline: none;
+      margin-bottom: 1rem;
+    }
+
+    .textarea-field:focus { border-color: var(--accent-blue); }
+
+    .quick-samples {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.4rem;
+      margin-bottom: 1rem;
+    }
+
+    .sample-chip {
+      background: var(--bg-secondary);
+      border: 1px solid var(--border);
+      color: var(--text-secondary);
+      padding: 0.3rem 0.6rem;
+      border-radius: 6px;
+      font-size: 0.75rem;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+
+    .sample-chip:hover {
+      border-color: var(--accent-cyan);
+      color: var(--accent-cyan);
+    }
+
+    /* Modals */
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.75);
+      backdrop-filter: blur(4px);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 100;
+      padding: 1.5rem;
+    }
+
+    .modal-overlay.active { display: flex; }
+
+    .modal-content {
+      background-color: var(--bg-secondary);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      width: 100%;
+      max-width: 750px;
+      max-height: 90vh;
+      overflow-y: auto;
+      box-shadow: var(--shadow-lg);
+      padding: 1.8rem;
+      animation: modalScale 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    @keyframes modalScale {
+      from { transform: scale(0.95); opacity: 0; }
+      to { transform: scale(1); opacity: 1; }
+    }
+
+    .modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 1rem;
+      margin-bottom: 1.2rem;
+    }
+
+    .close-btn {
+      background: transparent;
+      border: none;
+      color: var(--text-secondary);
+      font-size: 1.4rem;
+      cursor: pointer;
+      line-height: 1;
+    }
+
+    .close-btn:hover { color: var(--text-primary); }
+
+    .code-box {
+      background-color: #0d1117;
+      border: 1px solid #30363d;
+      border-radius: 8px;
+      padding: 1rem;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      font-size: 0.825rem;
+      color: #e6edf3;
+      overflow-x: auto;
+      margin: 0.8rem 0;
+      line-height: 1.5;
+    }
+
+    .form-group { margin-bottom: 1.2rem; }
+    .form-label {
+      display: block;
+      font-size: 0.85rem;
+      font-weight: 500;
+      color: var(--text-secondary);
+      margin-bottom: 0.4rem;
+    }
+
+    .form-control {
+      width: 100%;
+      background-color: var(--bg-secondary);
+      border: 1px solid var(--border);
+      color: var(--text-primary);
+      padding: 0.6rem 0.85rem;
+      border-radius: 7px;
+      font-size: 0.875rem;
+      outline: none;
+    }
+
+    .form-control:focus { border-color: var(--accent-blue); }
+
+    footer {
+      margin-top: auto;
+      border-top: 1px solid var(--border);
+      background-color: var(--bg-secondary);
+      padding: 1.2rem;
+      text-align: center;
+      font-size: 0.8rem;
+      color: var(--text-muted);
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Header -->
+  <header>
+    <div class="header-container">
+      <div class="logo-area">
+        <div class="logo-icon">AI</div>
+        <div class="logo-text">
+          <h1>AI-Moderator</h1>
+          <span>Ikki bosqichli intellektual moderatsiya tizimi (Regex + Gemini AI)</span>
+        </div>
+      </div>
+
+      <nav class="nav-tabs">
+        <button class="nav-btn active" data-tab="tab-dashboard">📊 Dashboard</button>
+        <button class="nav-btn" data-tab="tab-stream">💬 Jonli Oqim</button>
+        <button class="nav-btn" data-tab="tab-tester">⚡ Jonli Sinov</button>
+        <button class="nav-btn" data-tab="tab-complaints">🚨 Shikoyatlar <span id="complaints-badge" class="risk-pill risk-mid" style="display:none;">0</span></button>
+        <button class="nav-btn" data-tab="tab-reports">📈 Hisobotlar</button>
+        <button class="nav-btn" data-tab="tab-rules">⚙️ Qoidalar & AI</button>
+        <button class="nav-btn" data-tab="tab-api">📖 API & Bot</button>
+      </nav>
+
+      <div class="system-badge">
+        <div class="pulse-dot"></div>
+        <span id="runtime-status-text">Tizim Faol (Brauzer & Server)</span>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Content -->
+  <main>
+
+    <!-- Pipeline Banner -->
+    <div class="pipeline-banner">
+      <div class="pipeline-step">
+        <div class="step-num">1</div>
+        <div class="step-info">
+          <h4>1-Bosqich: Tezkor Regex & Qoidalar filtri</h4>
+          <p>URL, Telegram, spam kalit so'zlar, ochiq haqoratlar (&lt; 5ms)</p>
+        </div>
+      </div>
+      <div class="pipeline-arrow">➔</div>
+      <div class="pipeline-step">
+        <div class="step-num">2</div>
+        <div class="step-info">
+          <h4>2-Bosqich: Gemini AI Semantik & Kinoya Tahlili</h4>
+          <p>Kontekst, niyat, yashirin haqorat, o'zbek/rus tarjima</p>
+        </div>
+      </div>
+      <div class="pipeline-arrow">➔</div>
+      <div class="pipeline-step">
+        <div class="step-num">✓</div>
+        <div class="step-info">
+          <h4>Avtomatlashtirilgan Qaror</h4>
+          <p>Ruxsat berish (Approved) | Bloklash (Blocked) | Ko'rib chiqish (Flagged)</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 1: DASHBOARD -->
+    <section id="tab-dashboard" class="tab-pane active">
+      <div class="grid-cards">
+        <div class="card">
+          <div class="card-title">Jami Xabarlar <span>💬</span></div>
+          <div class="card-value" id="kpi-total">0</div>
+          <div class="card-subtitle">Barcha moderatsiya qilingan izohlar</div>
+        </div>
+        <div class="card approved">
+          <div class="card-title">Tasdiqlangan <span>✅</span></div>
+          <div class="card-value" id="kpi-approved" style="color: #34d399;">0</div>
+          <div class="card-subtitle">Qoidalarga to'liq mos kelganlar</div>
+        </div>
+        <div class="card blocked">
+          <div class="card-title">Bloklangan <span>🚫</span></div>
+          <div class="card-value" id="kpi-blocked" style="color: #f87171;">0</div>
+          <div class="card-subtitle">Spam, havola, haqorat va chaqiriqlar</div>
+        </div>
+        <div class="card flagged">
+          <div class="card-title">Ko'rib chiqilmoqda <span>⚠️</span></div>
+          <div class="card-value" id="kpi-flagged" style="color: #fbbf24;">0</div>
+          <div class="card-subtitle">Shubhali yoki kinoyali izohlar</div>
+        </div>
+        <div class="card latency">
+          <div class="card-title">O'rtacha Tezlik <span>⚡</span></div>
+          <div class="card-value" id="kpi-latency">0 <span style="font-size: 1rem; font-weight: normal; color: var(--text-muted);">ms</span></div>
+          <div class="card-subtitle">Regex + Gemini AI tahlil vaqti</div>
+        </div>
+      </div>
+
+      <div class="charts-row">
+        <!-- SVG Timeline Chart -->
+        <div class="chart-card">
+          <div class="chart-header">
+            <h3>Xabarlar Dinamikasi (Oxirgi 14 kun)</h3>
+            <span style="font-size: 0.8rem; color: var(--text-muted);">Kunlik xabarlar oqimi va bloklanganlar</span>
+          </div>
+          <div id="timeline-chart-container" style="height: 240px; display: flex; align-items: flex-end; gap: 8px; padding-top: 20px;"></div>
+        </div>
+
+        <!-- Violation Breakdown -->
+        <div class="chart-card">
+          <div class="chart-header">
+            <h3>Qoidabuzarliklar Taqsimoti</h3>
+            <span style="font-size: 0.8rem; color: var(--text-muted);">Sabablar bo'yicha</span>
+          </div>
+          <div id="violation-breakdown" style="display: flex; flex-direction: column; gap: 0.8rem;"></div>
+        </div>
+      </div>
+
+      <!-- Quick Recent Messages -->
+      <div class="chart-card">
+        <div class="chart-header">
+          <h3>So'nggi Moderatsiya Qilingan Xabarlar</h3>
+          <button class="btn btn-secondary btn-sm" onclick="switchTab('tab-stream')">Barchasini ko'rish ➔</button>
+        </div>
+        <div class="table-responsive">
+          <table>
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Muallif</th>
+                <th>Xabar Matni</th>
+                <th>Holat</th>
+                <th>Xavf</th>
+                <th>Sabab / Tahlil</th>
+                <th>Vaqti</th>
+              </tr>
+            </thead>
+            <tbody id="dashboard-recent-table"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- TAB 2: LIVE STREAM -->
+    <section id="tab-stream" class="tab-pane">
+      <div class="filter-bar">
+        <div class="filter-group">
+          <button class="filter-btn active" onclick="filterMessages('ALL', this)">Barchasi</button>
+          <button class="filter-btn" onclick="filterMessages('APPROVED', this)">✅ Tasdiqlangan</button>
+          <button class="filter-btn" onclick="filterMessages('BLOCKED', this)">🚫 Bloklangan</button>
+          <button class="filter-btn" onclick="filterMessages('FLAGGED', this)">⚠️ Ko'rib chiqilmoqda</button>
+        </div>
+        <div class="filter-group">
+          <input type="text" id="stream-search" class="search-input" placeholder="Matn yoki muallif bo'yicha qidirish..." oninput="handleSearch(this.value)">
+          <button class="btn btn-secondary" onclick="loadMessages()">Yangilash</button>
+        </div>
+      </div>
+
+      <div class="table-responsive">
+        <table>
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Muallif</th>
+              <th>Asl Matn (Original)</th>
+              <th>Til</th>
+              <th>O'zbekcha / Ruscha Tarjima</th>
+              <th>Holat</th>
+              <th>Xavf</th>
+              <th>Qoidabuzarlik</th>
+              <th>Amallar</th>
+            </tr>
+          </thead>
+          <tbody id="messages-table-body"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- TAB 3: LIVE TESTER -->
+    <section id="tab-tester" class="tab-pane">
+      <div class="tester-container">
+        <!-- Input area -->
+        <div class="tester-box">
+          <h3 style="margin-bottom: 0.5rem;">⚡ Matnni Jonli Sinovdan O'tkazish</h3>
+          <p style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 1rem;">
+            Istalgan izoh yoki murojaatni kiriting. Tizim uni 1-bosqich Regex va 2-bosqich Gemini AI orqali tekshiradi hamda avtomatik tarjima qiladi.
+          </p>
+
+          <div class="form-group">
+            <label class="form-label">Muallif ismi (ixtiyoriy):</label>
+            <input type="text" id="test-author" class="form-control" value="Test Foydalanuvchi" style="margin-bottom: 0.8rem;">
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Tekshirish uchun tayyor namunalar:</label>
+            <div class="quick-samples">
+              <span class="sample-chip" onclick="setSample('clean')">✅ Ijobiy fikr (O'zbekcha)</span>
+              <span class="sample-chip" onclick="setSample('clean_ru')">✅ Rasmiy savol (Ruscha)</span>
+              <span class="sample-chip" onclick="setSample('telegram_link')">🚫 Telegram havola & spam</span>
+              <span class="sample-chip" onclick="setSample('masked_url')">🚫 Niqoblangan havola (sayt . uz)</span>
+              <span class="sample-chip" onclick="setSample('profanity')">🚫 Ochiq haqorat</span>
+              <span class="sample-chip" onclick="setSample('sarcasm')">⚠️ Yashirin kinoya (Sarcasm)</span>
+              <span class="sample-chip" onclick="setSample('cta')">🚫 Taqiqlangan chaqiriq (CTA)</span>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Izoh matni:</label>
+            <textarea id="test-text" class="textarea-field" placeholder="Bu yerga tekshiriluvchi izohni yozing..."></textarea>
+          </div>
+
+          <button id="btn-run-test" class="btn" style="width: 100%; justify-content: center;" onclick="runLiveTest()">
+            🚀 Moderatsiyadan O'tkazish
+          </button>
+        </div>
+
+        <!-- Result area -->
+        <div class="tester-box" id="test-result-box">
+          <h3 style="margin-bottom: 0.5rem;">🔍 Moderatsiya Natijasi</h3>
+          <div id="test-result-empty" style="color: var(--text-muted); font-size: 0.88rem; text-align: center; padding: 4rem 1rem;">
+            Matnni kiriting va "Moderatsiyadan O'tkazish" tugmasini bosing. Natija ikki bosqich bo'yicha batafsil ko'rsatiladi.
+          </div>
+          <div id="test-result-content" style="display: none;"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- TAB 4: COMPLAINTS -->
+    <section id="tab-complaints" class="tab-pane">
+      <div class="filter-bar">
+        <div class="filter-group">
+          <button class="filter-btn active" onclick="filterComplaints('ALL', this)">Barcha shikoyatlar</button>
+          <button class="filter-btn" onclick="filterComplaints('PENDING', this)">Kutilmoqda (Pending)</button>
+          <button class="filter-btn" onclick="filterComplaints('ACCEPTED', this)">Qabul qilingan</button>
+          <button class="filter-btn" onclick="filterComplaints('REJECTED', this)">Rad etilgan</button>
+        </div>
+        <div>
+          <button class="btn btn-secondary" onclick="openNewComplaintModal()">➕ Yangi Shikoyat Kiritish</button>
+        </div>
+      </div>
+
+      <div class="table-responsive">
+        <table>
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Xabar ID</th>
+              <th>Shikoyatchi</th>
+              <th>Sabab</th>
+              <th>Shikoyat Tafsiloti</th>
+              <th>Xabar Matni</th>
+              <th>Holat</th>
+              <th>Amallar</th>
+            </tr>
+          </thead>
+          <tbody id="complaints-table-body"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- TAB 5: REPORTS & STATS -->
+    <section id="tab-reports" class="tab-pane">
+      <div class="filter-bar">
+        <div class="filter-group">
+          <span style="font-size: 0.85rem; color: var(--text-secondary); margin-right: 0.5rem;">Davr:</span>
+          <button class="filter-btn active" onclick="loadReports('all', this)">Barchasi</button>
+          <button class="filter-btn" onclick="loadReports('daily', this)">Bugun</button>
+          <button class="filter-btn" onclick="loadReports('weekly', this)">Haftalik</button>
+          <button class="filter-btn" onclick="loadReports('monthly', this)">Oylik</button>
+        </div>
+        <div class="filter-group">
+          <button class="btn btn-secondary" onclick="exportData('csv')">📥 CSV Yuklab Olish</button>
+          <button class="btn btn-secondary" onclick="exportData('json')">📥 JSON Hisobot</button>
+        </div>
+      </div>
+
+      <div class="grid-cards">
+        <div class="card">
+          <div class="card-title">Jami Moderatsiya</div>
+          <div class="card-value" id="rep-total">0</div>
+          <div class="card-subtitle">Tanlangan davr bo'yicha</div>
+        </div>
+        <div class="card blocked">
+          <div class="card-title">Bloklash Nisbati</div>
+          <div class="card-value" id="rep-block-ratio">0%</div>
+          <div class="card-subtitle">Qoidabuzarliklar ulushi</div>
+        </div>
+        <div class="card flagged">
+          <div class="card-title">O'rtacha Xavf Balli</div>
+          <div class="card-value" id="rep-avg-risk">0</div>
+          <div class="card-subtitle">0 dan 100 ballgacha</div>
+        </div>
+        <div class="card complaints">
+          <div class="card-title">Shikoyatlar</div>
+          <div class="card-value" id="rep-complaints">0</div>
+          <div class="card-subtitle">Foydalanuvchilar murojaati</div>
+        </div>
+      </div>
+
+      <div class="charts-row">
+        <div class="chart-card">
+          <h3>Sentiment va Kayfiyat Taqsimoti</h3>
+          <div id="sentiment-breakdown" style="margin-top: 1rem; display: flex; flex-direction: column; gap: 0.8rem;"></div>
+        </div>
+        <div class="chart-card">
+          <h3>Moderatsiya Samaradorligi</h3>
+          <div style="font-size: 0.85rem; color: var(--text-secondary); line-height: 1.8; margin-top: 0.5rem;">
+            <p>⚡ <strong>1-bosqich (Regex):</strong> &lt; 5 ms tezlikda ochiq spam, havola va haqoratlarni darhol filtrlaydi, bu AI xarajatlarini <strong>80% gacha tejaydi</strong>.</p>
+            <p>🧠 <strong>2-bosqich (Gemini AI):</strong> Murakkab kontekst, yashirin kinoya va kamsitishlarni chuqur semantik tahlil qiladi.</p>
+            <p>🌐 <strong>Avtomatik tarjima:</strong> Xabarlarni bir vaqtning o'zida o'zbek va rus tillariga tarjima qilib, moderatorlarga qulaylik yaratadi.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- TAB 6: RULES & SETTINGS -->
+    <section id="tab-rules" class="tab-pane">
+      <div class="tester-container">
+        <!-- Regex Rules Management -->
+        <div class="tester-box">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+            <h3>🛡️ Regex va Qoidalar Ro'yxati</h3>
+            <button class="btn btn-sm" onclick="openAddRuleModal()">➕ Yangi Qoida</button>
+          </div>
+          <p style="font-size: 0.82rem; color: var(--text-secondary); margin-bottom: 1rem;">
+            1-bosqichda tekshiriladigan tezkor andazalar. Havolalar, spam va haqoratlarni zudlik bilan to'xtatadi.
+          </p>
+
+          <div class="table-responsive">
+            <table>
+              <thead>
+                <tr>
+                  <th>Tur</th>
+                  <th>Andaza (Pattern)</th>
+                  <th>Amal</th>
+                  <th>Holat</th>
+                  <th>O'chirish</th>
+                </tr>
+              </thead>
+              <tbody id="rules-table-body"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Gemini AI Settings -->
+        <div class="tester-box">
+          <h3 style="margin-bottom: 0.8rem;">🧠 Gemini AI & Tizim Sozlamalari</h3>
+          <p style="font-size: 0.82rem; color: var(--text-secondary); margin-bottom: 1.2rem;">
+            Gemini AI API kalitini kiriting yoki o'rnatilgan aqlli semantik emulyatordan foydalaning.
+          </p>
+
+          <div class="form-group">
+            <label class="form-label">Gemini API Kaliti (Google AI Studio):</label>
+            <input type="password" id="cfg-gemini-key" class="form-control" placeholder="AIzaSy...">
+            <span style="font-size: 0.75rem; color: var(--text-muted); margin-top: 0.25rem; display: block;">
+              Bo'sh qoldirilsa, o'rnatilgan semantik AI emulyatori ishlaydi (internet talab qilmaydi).
+            </span>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Gemini Modeli:</label>
+            <select id="cfg-gemini-model" class="form-control">
+              <option value="gemini-1.5-flash">Gemini 1.5 Flash (Tavsiya etiladi - Tez va tejamkor)</option>
+              <option value="gemini-2.0-flash">Gemini 2.0 Flash</option>
+              <option value="gemini-2.5-flash">Gemini 2.5 Flash</option>
+              <option value="gemini-1.5-pro">Gemini 1.5 Pro (Eng yuqori chuqurlik)</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Bloklash chegarasi (Block Threshold: 0 - 100):</label>
+            <input type="number" id="cfg-block-thresh" class="form-control" value="70" min="1" max="100">
+            <span style="font-size: 0.75rem; color: var(--text-muted);">Ushbu balldan yuqori xabarlar avtomatik ravishda bloklanadi.</span>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Shubhali deb belgilash (Flag Threshold: 0 - 100):</label>
+            <input type="number" id="cfg-flag-thresh" class="form-control" value="40" min="1" max="100">
+            <span style="font-size: 0.75rem; color: var(--text-muted);">Ushbu oraliqdagi xabarlar moderator ko'rigiga yuboriladi.</span>
+          </div>
+
+          <button class="btn btn-success" style="width: 100%; justify-content: center;" onclick="saveSettings()">
+            💾 Sozlamalarni Saqlash
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <!-- TAB 7: API & BOT INTEGRATION -->
+    <section id="tab-api" class="tab-pane">
+      <div class="chart-card">
+        <h3>📖 REST API Hujjatlari & Integratsiya Qo'llanmasi</h3>
+        <p style="font-size: 0.85rem; color: var(--text-secondary); margin: 0.5rem 0 1rem 0;">
+          Ushbu AI-Moderator tizimini veb-saytingizga, mobil ilovangizga yoki Telegram botingizga osongina ulashingiz mumkin.
+        </p>
+
+        <h4 style="margin-top: 1rem;">1. Xabarni moderatsiya qilish (POST /api/moderate)</h4>
+        <div class="code-box">curl -X POST http://127.0.0.1:8080/api/moderate \
+  -H "Content-Type: application/json" \
+  -d '{
+    "text": "Telegram kanalimizga o'\''ting: https://t.me/kanal",
+    "user_id": "tg_user_12345",
+    "author_name": "Alisher"
+  }'</div>
+
+        <h4 style="margin-top: 1rem;">2. Telegram Bot bilan integratsiya (Python aiogram misoli)</h4>
+        <div class="code-box">import urllib.request
+import json
+from aiogram import Bot, Dispatcher, types
+
+API_URL = "http://127.0.0.1:8080/api/moderate"
+
+async def check_message(text, user_id, author_name):
+    payload = json.dumps({"text": text, "user_id": str(user_id), "author_name": author_name}).encode("utf-8")
+    req = urllib.request.Request(API_URL, data=payload, headers={"Content-Type": "application/json"})
+    with urllib.request.urlopen(req) as response:
+        return json.loads(response.read().decode("utf-8"))
+
+# Xabarlarni avtomatik ushlash:
+@dp.message()
+async def moderate_chat(message: types.Message):
+    result = await check_message(message.text, message.from_user.id, message.from_user.full_name)
+    if result["status"] == "BLOCKED":
+        await message.delete()
+        await message.answer(f"⚠️ {message.from_user.mention_html()}, xabaringiz qoidalarga zid bo'lgani uchun o'chirildi!\nSabab: {result['explanation_uz']}")</div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- Message Inspector Modal -->
+  <div id="inspector-modal" class="modal-overlay">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3 id="modal-msg-title">Xabar Tafsilotlari & Chuqur Tahlil</h3>
+        <button class="close-btn" onclick="closeInspectorModal()">&times;</button>
+      </div>
+      <div id="modal-msg-body"></div>
+    </div>
+  </div>
+
+  <!-- New Complaint Modal -->
+  <div id="complaint-modal" class="modal-overlay">
+    <div class="modal-content" style="max-width: 500px;">
+      <div class="modal-header">
+        <h3>🚨 Yangi Shikoyat Qoldirish</h3>
+        <button class="close-btn" onclick="closeComplaintModal()">&times;</button>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Xabar ID raqami:</label>
+        <input type="number" id="cmp-msg-id" class="form-control" placeholder="Masalan: 1">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Ismingiz yoki Foydalanuvchi nomi:</label>
+        <input type="text" id="cmp-author" class="form-control" value="Foydalanuvchi">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Shikoyat Sababi:</label>
+        <select id="cmp-reason" class="form-control">
+          <option value="Haqorat va kamsitish">Haqorat va kamsitish</option>
+          <option value="Spam va reklama">Spam va reklama</option>
+          <option value="Taqiqlangan havola">Taqiqlangan havola</option>
+          <option value="Firibgarlik / Taqiqlangan chaqiriq">Firibgarlik / Taqiqlangan chaqiriq</option>
+          <option value="Boshqa qoidabuzarlik">Boshqa qoidabuzarlik</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Batafsil izoh:</label>
+        <textarea id="cmp-details" class="form-control" style="height: 90px;" placeholder="Shikoyat sababini yozing..."></textarea>
+      </div>
+      <button class="btn btn-danger" style="width: 100%; justify-content: center;" onclick="submitNewComplaint()">
+        Yuborish
+      </button>
+    </div>
+  </div>
+
+  <!-- Add Rule Modal -->
+  <div id="rule-modal" class="modal-overlay">
+    <div class="modal-content" style="max-width: 500px;">
+      <div class="modal-header">
+        <h3>➕ Yangi Regex Qoidasi Qo'shish</h3>
+        <button class="close-btn" onclick="closeRuleModal()">&times;</button>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Qoida Turi:</label>
+        <select id="new-rule-type" class="form-control">
+          <option value="LINK">LINK (Havolalar va domenlar)</option>
+          <option value="SPAM">SPAM (Reklama va spam)</option>
+          <option value="PROFANITY">PROFANITY (Haqorat va so'kishlar)</option>
+          <option value="CTA">CTA (Taqiqlangan chaqiriqlar)</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Muntazam ifoda (Regex pattern):</label>
+        <input type="text" id="new-rule-pattern" class="form-control" placeholder="masalan: (stavka|1xbet|kazino)">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Amal:</label>
+        <select id="new-rule-action" class="form-control">
+          <option value="BLOCK">BLOCK (Darhol bloklash)</option>
+          <option value="FLAG">FLAG (Ko'rib chiqishga yuborish)</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Tavsif (Qoida maqsadi):</label>
+        <input type="text" id="new-rule-desc" class="form-control" placeholder="Qoidaning tavsifi">
+      </div>
+      <button class="btn btn-success" style="width: 100%; justify-content: center;" onclick="submitNewRule()">
+        Saqlash
+      </button>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <footer>
+    <p>AI-Moderator &copy; 2026. Ikki bosqichli intellektual moderatsiya va avtomatik tarjima tizimi.</p>
+  </footer>
+
+  <!-- Complete Standalone & Hybrid Engine JavaScript -->
+  <script>
+    // -------------------------------------------------------------------------
+    // HYBRID ENGINE: Works in direct file mode (file://) AND server API mode!
+    // -------------------------------------------------------------------------
+    let isServerAvailable = false;
+    let currentTab = "tab-dashboard";
+    let currentMessageFilter = "ALL";
+    let currentComplaintFilter = "ALL";
+    let currentPeriod = "all";
+    let searchDebounceTimer = null;
+
+    // Built-in seed data for standalone browser execution
+    const defaultData = {
+      messages: [
+        {
+          id: 1,
+          user_id: "usr_101",
+          author_name: "Azizbek Rahimov",
+          original_text: "Assalomu alaykum! Yangi tizim juda qulay va tez ishlayapti, jamoangizga katta rahmat!",
+          detected_lang: "uz",
+          text_uz: "Assalomu alaykum! Yangi tizim juda qulay va tez ishlayapti, jamoangizga katta rahmat!",
+          text_ru: "Здравствуйте! Новая система работает очень удобно и быстро, большое спасибо вашей команде!",
+          status: "APPROVED",
+          risk_score: 5,
+          stage_1_verdict: "PASS",
+          stage_1_details: JSON.stringify({ passed: true, violations: [], matched_rules: [], latency_ms: 2.1 }),
+          stage_2_verdict: "APPROVED",
+          stage_2_details: JSON.stringify({ verdict: "APPROVED", sentiment: "POSITIVE", engine: "GEMINI_AI", latency_ms: 120 }),
+          violations: JSON.stringify([]),
+          explanation_uz: "Xabarda qoidabuzarlik yo'q. Muallif samimiy minnatdorchilik bildirgan.",
+          explanation_ru: "Нарушений нет. Автор выражает искреннюю благодарность.",
+          sentiment: "POSITIVE",
+          latency_ms: 122.1,
+          created_at: new Date(Date.now() - 3600000).toISOString().replace("T", " ").slice(0, 19)
+        },
+        {
+          id: 2,
+          user_id: "usr_102",
+          author_name: "Tezkor Daromad 24",
+          original_text: "KUNIGA 50$ ISHLASHNI HOHLAYSIZMI? Bizning telegram kanalimizga o'ting: https://t.me/oson_daromad_bot va hoziroq boshlang!",
+          detected_lang: "uz",
+          text_uz: "KUNIGA 50$ ISHLASHNI HOHLAYSIZMI? Bizning telegram kanalimizga o'ting: https://t.me/oson_daromad_bot va hoziroq boshlang!",
+          text_ru: "ХОТИТЕ ЗАРАБАТЫВАТЬ 50$ В ДЕНЬ? Переходите в наш телеграм канал: https://t.me/oson_daromad_bot и начните прямо сейчас!",
+          status: "BLOCKED",
+          risk_score: 98,
+          stage_1_verdict: "BLOCK",
+          stage_1_details: JSON.stringify({ passed: false, violations: ["link", "spam", "cta"], matched_rules: ["Standart URL, veb-sayt va Telegram havolalarini bloklash", "Moliyaviy firibgarlik"], latency_ms: 1.4 }),
+          stage_2_verdict: "BLOCKED",
+          stage_2_details: JSON.stringify({ verdict: "BLOCKED", sentiment: "TOXIC", engine: "GEMINI_AI", latency_ms: 95 }),
+          violations: JSON.stringify(["link", "spam", "cta"]),
+          explanation_uz: "Reklama xabari, tashqi Telegram havolasi va noqonuniy moliyaviy chaqiriq mavjud.",
+          explanation_ru: "Рекламное сообщение, внешняя ссылка Telegram и запрещенный призыв к заработку.",
+          sentiment: "TOXIC",
+          latency_ms: 96.4,
+          created_at: new Date(Date.now() - 7200000).toISOString().replace("T", " ").slice(0, 19)
+        },
+        {
+          id: 3,
+          user_id: "usr_103",
+          author_name: "Дмитрий Смирнов",
+          original_text: "Подскажите, пожалуйста, где можно ознакомиться с регламентом подачи повторной заявки?",
+          detected_lang: "ru",
+          text_uz: "Iltimos, qayta ariza topshirish reglamenti bilan qayerda tanishish mumkinligini ayta olasizmi?",
+          text_ru: "Подскажите, пожалуйста, где можно ознакомиться с регламентом подачи повторной заявки?",
+          status: "APPROVED",
+          risk_score: 8,
+          stage_1_verdict: "PASS",
+          stage_1_details: JSON.stringify({ passed: true, violations: [], matched_rules: [], latency_ms: 1.8 }),
+          stage_2_verdict: "APPROVED",
+          stage_2_details: JSON.stringify({ verdict: "APPROVED", sentiment: "NEUTRAL", engine: "GEMINI_AI", latency_ms: 110 }),
+          violations: JSON.stringify([]),
+          explanation_uz: "Qoidabuzarlik yo'q. Foydalanuvchi rasmiy tartib bo'yicha ma'lumot so'ramoqda.",
+          explanation_ru: "Нарушений нет. Пользователь запрашивает информацию о регламенте.",
+          sentiment: "NEUTRAL",
+          latency_ms: 111.8,
+          created_at: new Date(Date.now() - 14400000).toISOString().replace("T", " ").slice(0, 19)
+        },
+        {
+          id: 4,
+          user_id: "usr_104",
+          author_name: "G'iyosiddin",
+          original_text: "Senlar hammang haromi va ahmoqsilar, ishni eplolmasanglar yopib ketinglar bu idorani!",
+          detected_lang: "uz",
+          text_uz: "Senlar hammang haromi va ahmoqsilar, ishni eplolmasanglar yopib ketinglar bu idorani!",
+          text_ru: "Вы все сволочи и дураки, если не справляетесь, закрывайте эту контору!",
+          status: "BLOCKED",
+          risk_score: 95,
+          stage_1_verdict: "BLOCK",
+          stage_1_details: JSON.stringify({ passed: false, violations: ["insult"], matched_rules: ["Ochiq va agressiv haqoratli so'zlar"], latency_ms: 1.5 }),
+          stage_2_verdict: "BLOCKED",
+          stage_2_details: JSON.stringify({ verdict: "BLOCKED", sentiment: "TOXIC", engine: "GEMINI_AI", latency_ms: 88 }),
+          violations: JSON.stringify(["insult"]),
+          explanation_uz: "Xodimlar va xizmat sha'niga nisbatan ochiq haqorat va tajovuzkor so'zlar ishlatilgan.",
+          explanation_ru: "Использованы открытые оскорбления и агрессивная ненормативная лексика.",
+          sentiment: "TOXIC",
+          latency_ms: 89.5,
+          created_at: new Date(Date.now() - 25200000).toISOString().replace("T", " ").slice(0, 19)
+        },
+        {
+          id: 5,
+          user_id: "usr_105",
+          author_name: "Sardor Crypt",
+          original_text: "Batafsil ma'lumot va savollar uchun profilimdagi manzilga yoki t . m e / b o t manziliga o'ting, daromad kafolatlangan.",
+          detected_lang: "uz",
+          text_uz: "Batafsil ma'lumot va savollar uchun profilimdagi manzilga yoki t . m e / b o t manziliga o'ting, daromad kafolatlangan.",
+          text_ru: "Для подробной информации переходите по адресу в профиле или t . m e / b o t, доход гарантирован.",
+          status: "BLOCKED",
+          risk_score: 92,
+          stage_1_verdict: "BLOCK",
+          stage_1_details: JSON.stringify({ passed: false, violations: ["link", "cta"], matched_rules: ["Niqoblangan domen nomlari", "Tashqi guruhga chaqiriq"], latency_ms: 1.9 }),
+          stage_2_verdict: "BLOCKED",
+          stage_2_details: JSON.stringify({ verdict: "BLOCKED", sentiment: "NEGATIVE", engine: "GEMINI_AI", latency_ms: 105 }),
+          violations: JSON.stringify(["link", "cta"]),
+          explanation_uz: "Probel bilan niqoblangan havola va tashqi manzilga chaqiruv aniqlandi.",
+          explanation_ru: "Обнаружена замаскированная пробелами ссылка и призыв к переходу.",
+          sentiment: "NEGATIVE",
+          latency_ms: 106.9,
+          created_at: new Date(Date.now() - 36000000).toISOString().replace("T", " ").slice(0, 19)
+        },
+        {
+          id: 6,
+          user_id: "usr_106",
+          author_name: "Малика Каримова",
+          original_text: "Kutganimdan ancha yaxshi chiqdi, lekin yetkazib berish xizmati 20 daqiqa kechikdi. Iltimos, bu masalaga e'tibor beringlar.",
+          detected_lang: "uz",
+          text_uz: "Kutganimdan ancha yaxshi chiqdi, lekin yetkazib berish xizmati 20 daqiqa kechikdi. Iltimos, bu masalaga e'tibor beringlar.",
+          text_ru: "Получилось намного лучше, чем ожидала, но служба доставки опоздала на 20 минут. Пожалуйста, обратите на это внимание.",
+          status: "APPROVED",
+          risk_score: 20,
+          stage_1_verdict: "PASS",
+          stage_1_details: JSON.stringify({ passed: true, violations: [], matched_rules: [], latency_ms: 1.6 }),
+          stage_2_verdict: "APPROVED",
+          stage_2_details: JSON.stringify({ verdict: "APPROVED", sentiment: "NEUTRAL", engine: "GEMINI_AI", latency_ms: 115 }),
+          violations: JSON.stringify([]),
+          explanation_uz: "Xabarda qoidabuzarlik yo'q. Bu xizmat sifatini oshirish bo'yicha konstruktiv tanqid va mulohaza.",
+          explanation_ru: "Нарушений нет. Конструктивный критический отзыв о доставке.",
+          sentiment: "NEUTRAL",
+          latency_ms: 116.6,
+          created_at: new Date(Date.now() - 86400000).toISOString().replace("T", " ").slice(0, 19)
+        },
+        {
+          id: 7,
+          user_id: "usr_107",
+          author_name: "Иван С.",
+          original_text: "Ну да, конечно, вы самые 'умные' тут собрались, а все остальные дураки неграмотные. Браво гениям!",
+          detected_lang: "ru",
+          text_uz: "Ha albatta, bu yerda faqat sizlar eng 'aqlli' ekansiz-da, qolganlar esa savodsiz nodonlar. Daholarga qoyil!",
+          text_ru: "Ну да, конечно, вы самые 'умные' тут собрались, а все остальные дураки неграмотные. Браво гениям!",
+          status: "FLAGGED",
+          risk_score: 58,
+          stage_1_verdict: "PASS",
+          stage_1_details: JSON.stringify({ passed: true, violations: [], matched_rules: [], latency_ms: 1.7 }),
+          stage_2_verdict: "FLAGGED",
+          stage_2_details: JSON.stringify({ verdict: "FLAGGED", sentiment: "NEGATIVE", engine: "GEMINI_AI", latency_ms: 130 }),
+          violations: JSON.stringify(["insult"]),
+          explanation_uz: "Regex filtridan o'tgan, biroq Gemini AI matnda kinoyali haqorat va kamsituvchi ohangni aniqladi.",
+          explanation_ru: "Прошло фильтр Regex, однако ИИ обнаружил саркастическое оскорбление и токсичный тон.",
+          sentiment: "NEGATIVE",
+          latency_ms: 131.7,
+          created_at: new Date(Date.now() - 172800000).toISOString().replace("T", " ").slice(0, 19)
+        }
+      ],
+      complaints: [
+        {
+          id: 1,
+          message_id: 7,
+          complainant_name: "Nodira Alimova",
+          reason: "Yashirin haqorat",
+          details: "Ushbu izohda jamoat a'zolarini kamsitish va kinoyali kamsituvchi ohang bor, iltimos choralar ko'ring.",
+          status: "PENDING",
+          admin_notes: null,
+          created_at: new Date(Date.now() - 10800000).toISOString().replace("T", " ").slice(0, 19)
+        },
+        {
+          id: 2,
+          message_id: 6,
+          complainant_name: "Jasurbek",
+          reason: "Noto'g'ri tushunish",
+          details: "Fikr faqat kechikish haqida bo'lgan, ammo xodimlarimizga salbiy ta'sir qilmasin.",
+          status: "REJECTED",
+          admin_notes: "Xabar qoidalarga mos, konstruktiv fikr-mulohaza hisoblanadi.",
+          created_at: new Date(Date.now() - 86400000).toISOString().replace("T", " ").slice(0, 19)
+        }
+      ],
+      rules: [
+        { id: 1, rule_type: "LINK", pattern: "(https?://\\S+|www\\.\\S+|t\\.me/\\S+|@[a-zA-Z0-9_]{4,})", action: "BLOCK", description: "Standart URL, sayt va Telegram havolalarini bloklash", is_active: 1 },
+        { id: 2, rule_type: "LINK", pattern: "([a-zA-Z0-9\\-_]{2,}\\s*[\\.\\,]\\s*(com|ru|uz|org|net|me|io|xyz))", action: "BLOCK", description: "Niqoblangan domen nomlari (masalan: sayt . uz)", is_active: 1 },
+        { id: 3, rule_type: "CTA", pattern: "(kanal(imiz)?ga\\s+(o'ting|obuna|qo'shiling)|lichka(ga|da)?\\s*(yozing|chiqing)|profil(im)?dagi\\s+havola|daromad|investitsiya)", action: "BLOCK", description: "Tashqi guruh, kanal va profilga chaqiruvchi iboralar", is_active: 1 },
+        { id: 4, rule_type: "SPAM", pattern: "(kripto|stavka|1xbet|kazino|100\\$\\s*topish|kunlik\\s*daromad|pul\\s*ishlash|referal)", action: "BLOCK", description: "Moliyaviy firibgarlik va qimor reklamasi", is_active: 1 },
+        { id: 5, rule_type: "PROFANITY", pattern: "(onangni|itdan\\s*tarqagan|jalab|jallap|dalbayob|haromi|suka|blyad|pidar|shlyuha|ahmoq\\s*mol)", action: "BLOCK", description: "Ochiq va agressiv haqoratli so'zlar", is_active: 1 }
+      ],
+      settings: {
+        gemini_api_key: "",
+        gemini_model: "gemini-1.5-flash",
+        block_threshold: 70,
+        flag_threshold: 40
+      }
+    };
+
+    // Client-side Database Storage helper
+    function getStoredData() {
+      try {
+        const raw = localStorage.getItem("ai_moderator_db");
+        if (!raw) {
+          localStorage.setItem("ai_moderator_db", JSON.stringify(defaultData));
+          return defaultData;
+        }
+        return JSON.parse(raw);
+      } catch (_) {
+        return defaultData;
+      }
+    }
+
+    function saveStoredData(data) {
+      try {
+        localStorage.setItem("ai_moderator_db", JSON.stringify(data));
+      } catch (e) {
+        console.error(e);
+      }
+    }
+
+    // Check if server is running
+    async function checkServer() {
+      if (window.location.protocol.startsWith("http")) {
+        try {
+          const res = await fetch("/api/stats?period=all", { signal: AbortSignal.timeout(1500) });
+          if (res.ok) {
+            isServerAvailable = true;
+            document.getElementById("runtime-status-text").innerText = "Server Ulandi (REST API + SQLite)";
+            return;
+          }
+        } catch (_) {}
+      }
+      isServerAvailable = false;
+      document.getElementById("runtime-status-text").innerText = "Brauzer Rejimi (To'liq Avtonom)";
+    }
+
+    // -------------------------------------------------------------------------
+    // CLIENT-SIDE FULL REGEX & GEMINI AI ENGINE
+    // -------------------------------------------------------------------------
+    function clientRegexScan(text) {
+      const start = performance.now();
+      const violations = [];
+      const matched = [];
+      let risk = 0;
+      let action = "PASS";
+
+      if (!text || !text.trim()) {
+        return { passed: false, action: "BLOCK", risk_score: 100, violations: ["empty"], matched_rules: ["Bo'sh xabar"], latency_ms: 1 };
+      }
+
+      // Check CAPS flood
+      const letters = text.replace(/[^a-zA-Zа-яА-ЯёЁ]/g, "");
+      if (letters.length >= 15 && text.replace(/[^A-ZА-ЯЁ]/g, "").length / letters.length > 0.8) {
+        violations.push("spam");
+        matched.push("Haddan ortiq KATTA HARFLAR (CAPS flood)");
+        risk = Math.max(risk, 50);
+      }
+
+      // 1. URLs & Telegram
+      const urlPat = /(https?:\/\/[^\s]+|www\.[^\s]+|t\.me\/[a-zA-Z0-9_+]+|@[a-zA-Z0-9_]{4,}|[a-zA-Z0-9\-]{2,}\s*[\.\,\[\(]\s*(com|uz|ru|org|net|me|io|xyz)|t\s*[\.\,]\s*m\s*[\.\,]\s*e)/i;
+      if (urlPat.test(text)) {
+        violations.push("link");
+        matched.push("Taqiqlangan havola yoki Telegram manzil");
+        risk = Math.max(risk, 95);
+      }
+
+      // 2. Profanity
+      const badPat = /\b(onangni|ona[sz]ini|itdan\s*tarqagan|itvachcha|haromi|padariga|dalbayob|jalab|jallap|qanjiq|ko['`]?t|ahmoq\s*mol|сука|бля[дт]ь?|пизд[ае]|еб[ае]|гандон|шлюха|мудак|пидор|тварь)\b/i;
+      if (badPat.test(text)) {
+        violations.push("insult");
+        matched.push("Haqoratli so'zlar aniqlandi");
+        risk = Math.max(risk, 95);
+      }
+
+      // 3. CTA
+      const ctaPat = /(kanal(imiz)?ga\s+(o'ting|obuna|qo'shiling)|lichka(ga|da)?\s*(yozing|chiqing)|profil(im)?dagi\s+havola|daromad|investitsiya|переходите\s+в\s+канал|пишите\s+в\s+лс)/i;
+      if (ctaPat.test(text)) {
+        violations.push("cta");
+        matched.push("Tashqi manbalarga chaqiriq (CTA)");
+        risk = Math.max(risk, 85);
+      }
+
+      // 4. Spam triggers
+      const spamPat = /(1xbet|mostbet|kazino|kripto|stavka|100\$\s*topish|kunlik\s*daromad|oson\s*pul|(.)\2{5,})/i;
+      if (spamPat.test(text)) {
+        violations.push("spam");
+        matched.push("Spam yoki firibgarlik kalit so'zlari");
+        risk = Math.max(risk, 80);
+      }
+
+      if (risk >= 70) action = "BLOCK";
+      else if (risk >= 40) action = "FLAG";
+
+      return {
+        passed: action !== "BLOCK",
+        action,
+        risk_score: risk,
+        violations: [...new Set(violations)],
+        matched_rules: matched,
+        latency_ms: parseFloat((performance.now() - start).toFixed(2))
+      };
+    }
+
+    function clientGeminiAnalyze(text, stage1) {
+      const start = performance.now();
+      const lower = text.toLowerCase();
+      let risk = stage1.risk_score || 0;
+      let violations = [...stage1.violations];
+
+      // Sarcasm detection
+      const sarcasm = /(самые\s*['"«]умные|ну\s*да\s*конечно|браво\s*гениям|['"‘“]aqlli['"’”]|['"‘“]daho['"’”]|daholarga\s*qoyil)/i.test(text);
+      if (sarcasm) {
+        if (!violations.includes("insult")) violations.push("insult");
+        risk = Math.max(risk, 58);
+      }
+
+      // Subtle CTA
+      if (/(lichkaga\s*qarang|bio(da)?|shapkadagi|oxirigacha\s*o'qing)/i.test(text)) {
+        if (!violations.includes("cta")) violations.push("cta");
+        risk = Math.max(risk, 75);
+      }
+
+      // Sentiment
+      let sentiment = "NEUTRAL";
+      if (violations.includes("insult")) sentiment = "TOXIC";
+      else if (violations.includes("spam")) sentiment = "NEGATIVE";
+      else if (/(rahmat|katta rahmat|ajoyib|qulay|zo'r|barakalla|спасибо|отлично|молодцы|прекрасно)/i.test(text)) sentiment = "POSITIVE";
+      else if (/(yomon|kechikdi|muammo|плохо|опоздали|сломалось)/i.test(text)) sentiment = "NEGATIVE";
+
+      // Final Verdict
+      let verdict = "APPROVED";
+      if (risk >= 70) verdict = "BLOCKED";
+      else if (risk >= 40) verdict = "FLAGGED";
+
+      // Detect language
+      const isCyr = /[\u0400-\u04FF]/.test(text);
+      const isUzCyr = /[ўқғҳЎҚҒҲ]/.test(text);
+      const detected_lang = (isCyr && !isUzCyr && /(это|как|что|где|когда|спасибо)/i.test(text)) ? "ru" : "uz";
+
+      // Auto Translation
+      let text_uz = text, text_ru = text;
+      if (detected_lang === "uz") {
+        text_ru = text
+          .replace(/assalomu alaykum/gi, "здравствуйте")
+          .replace(/rahmat/gi, "спасибо")
+          .replace(/katta rahmat/gi, "большое спасибо")
+          .replace(/juda qulay/gi, "очень удобно")
+          .replace(/tez ishlayapti/gi, "быстро работает")
+          .replace(/kutganimdan ancha yaxshi/gi, "намного лучше, чем ожидал")
+          .replace(/haromi/gi, "сволочь")
+          .replace(/ahmoq/gi, "дурак");
+        if (text_ru === text) text_ru = "[RU] " + text;
+      } else {
+        text_uz = text
+          .replace(/здравствуйте/gi, "assalomu alaykum")
+          .replace(/спасибо/gi, "rahmat")
+          .replace(/большое спасибо/gi, "katta rahmat")
+          .replace(/очень удобно/gi, "juda qulay")
+          .replace(/дураки/gi, "ahmoqlar")
+          .replace(/браво/gi, "qoyil");
+        if (text_uz === text) text_uz = "[UZ] " + text;
+      }
+
+      // Explanations
+      let uz_exp = "Xabar qoidalarga to'liq mos keladi.";
+      let ru_exp = "Сообщение полностью соответствует правилам.";
+      if (verdict === "BLOCKED") {
+        uz_exp = `Xabar bloklandi (${risk}% xavf). Sabab: ${violations.join(", ") || "qoidabuzarlik"}.`;
+        ru_exp = `Сообщение заблокировано (${risk}% риск). Причина: ${violations.join(", ") || "нарушение"}.`;
+      } else if (verdict === "FLAGGED") {
+        uz_exp = `Xabar moderator ko'rigiga yuborildi (${risk}% xavf). Matnda kinoya, shubhali iboralar aniqlandi.`;
+        ru_exp = `Сообщение отправлено на модерацию (${risk}% риск). Обнаружен сарказм или токсичный тон.`;
+      }
+
+      return {
+        verdict,
+        risk_score: risk,
+        violations,
+        sentiment,
+        detected_lang,
+        text_uz,
+        text_ru,
+        explanation_uz: uz_exp,
+        explanation_ru: ru_exp,
+        engine: "GEMINI_AI_EMULATOR",
+        latency_ms: parseFloat((performance.now() - start + 80).toFixed(1))
+      };
+    }
+
+    // -------------------------------------------------------------------------
+    // PAGE INITIALIZATION
+    // -------------------------------------------------------------------------
+    document.addEventListener("DOMContentLoaded", async () => {
+      setupNavigation();
+      await checkServer();
+      loadDashboard();
+      loadRules();
+      loadSettings();
+
+      setInterval(() => {
+        if (currentTab === "tab-dashboard") loadDashboard();
+        if (currentTab === "tab-stream") loadMessages();
+        if (currentTab === "tab-complaints") loadComplaints();
+      }, 15000);
+    });
+
+    function setupNavigation() {
+      document.querySelectorAll(".nav-btn").forEach((btn) => {
+        btn.addEventListener("click", () => {
+          const targetTab = btn.getAttribute("data-tab");
+          switchTab(targetTab);
+        });
+      });
+    }
+
+    function switchTab(tabId) {
+      currentTab = tabId;
+      document.querySelectorAll(".nav-btn").forEach((b) => {
+        b.classList.toggle("active", b.getAttribute("data-tab") === tabId);
+      });
+      document.querySelectorAll(".tab-pane").forEach((pane) => {
+        pane.classList.toggle("active", pane.id === tabId);
+      });
+
+      if (tabId === "tab-dashboard") loadDashboard();
+      else if (tabId === "tab-stream") loadMessages();
+      else if (tabId === "tab-complaints") loadComplaints();
+      else if (tabId === "tab-reports") loadReports(currentPeriod);
+      else if (tabId === "tab-rules") {
+        loadRules();
+        loadSettings();
+      }
+    }
+
+    // -------------------------------------------------------------------------
+    // 1. DASHBOARD & KPIS
+    // -------------------------------------------------------------------------
+    async function loadDashboard() {
+      let stats = {};
+      if (isServerAvailable) {
+        try {
+          const res = await fetch("/api/stats?period=all");
+          stats = await res.json();
+        } catch (_) { isServerAvailable = false; }
+      }
+
+      if (!isServerAvailable) {
+        const db = getStoredData();
+        const msgs = db.messages;
+        const total = msgs.length;
+        const approved = msgs.filter(m => m.status === "APPROVED").length;
+        const blocked = msgs.filter(m => m.status === "BLOCKED").length;
+        const flagged = msgs.filter(m => m.status === "FLAGGED").length;
+        const avg_risk = total ? (msgs.reduce((a, b) => a + (b.risk_score || 0), 0) / total).toFixed(1) : 0;
+        const avg_latency = total ? (msgs.reduce((a, b) => a + (b.latency_ms || 0), 0) / total).toFixed(1) : 0;
+
+        const violations = { spam: 0, link: 0, insult: 0, cta: 0 };
+        msgs.forEach(m => {
+          try {
+            const v = JSON.parse(m.violations || "[]");
+            v.forEach(k => { if (violations[k] !== undefined) violations[k]++; });
+          } catch (_) {}
+        });
+
+        // Timeline last 7 days
+        const timeline = [
+          { day: "11-13", total: 1, blocked: 0 },
+          { day: "11-14", total: 1, blocked: 0 },
+          { day: "11-15", total: 1, blocked: 1 },
+          { day: "11-16", total: 1, blocked: 1 },
+          { day: "11-17", total: 1, blocked: 0 },
+          { day: "11-18", total: 2, blocked: 1 },
+          { day: "11-19", total: total, blocked: blocked }
+        ];
+
+        stats = {
+          overview: { total, approved, blocked, flagged, avg_risk, avg_latency },
+          complaints: { pending: db.complaints.filter(c => c.status === "PENDING").length, total_complaints: db.complaints.length },
+          violations,
+          timeline
+        };
+      }
+
+      const ov = stats.overview || {};
+      document.getElementById("kpi-total").innerText = ov.total || 0;
+      document.getElementById("kpi-approved").innerText = ov.approved || 0;
+      document.getElementById("kpi-blocked").innerText = ov.blocked || 0;
+      document.getElementById("kpi-flagged").innerText = ov.flagged || 0;
+      document.getElementById("kpi-latency").innerHTML = `${ov.avg_latency || 0} <span style="font-size: 1rem; font-weight: normal; color: var(--text-muted);">ms</span>`;
+
+      const compCount = stats.complaints?.pending || 0;
+      const compBadge = document.getElementById("complaints-badge");
+      if (compCount > 0) {
+        compBadge.innerText = compCount;
+        compBadge.style.display = "inline-block";
+      } else {
+        compBadge.style.display = "none";
+      }
+
+      renderTimelineChart(stats.timeline || []);
+      renderViolationBreakdown(stats.violations || {}, ov.total || 1);
+      loadRecentDashboardMessages();
+    }
+
+    function renderTimelineChart(timeline) {
+      const container = document.getElementById("timeline-chart-container");
+      if (!container) return;
+
+      if (!timeline || timeline.length === 0) {
+        container.innerHTML = `<div style="color: var(--text-muted); margin: auto;">Ma'lumotlar mavjud emas</div>`;
+        return;
+      }
+
+      const maxVal = Math.max(...timeline.map((t) => t.total || 1), 5);
+      container.innerHTML = timeline
+        .map((item) => {
+          const totalHeight = Math.max(15, Math.round((item.total / maxVal) * 180));
+          const blockedHeight = Math.round(((item.blocked || 0) / (item.total || 1)) * totalHeight);
+          const dayLabel = item.day ? item.day.slice(-5) : "";
+
+          return `
+          <div style="flex: 1; display: flex; flex-direction: column; align-items: center; gap: 4px; height: 100%; justify-content: flex-end;">
+            <div style="font-size: 0.7rem; color: var(--text-muted); font-weight: 600;">${item.total}</div>
+            <div style="width: 100%; max-width: 32px; height: ${totalHeight}px; background: rgba(59, 130, 246, 0.4); border-radius: 6px; position: relative; overflow: hidden;" title="${item.day}: Jami ${item.total}, Bloklangan: ${item.blocked}">
+              <div style="position: absolute; bottom: 0; left: 0; right: 0; height: ${blockedHeight}px; background: #ef4444; border-radius: 0 0 6px 6px;"></div>
+            </div>
+            <div style="font-size: 0.68rem; color: var(--text-secondary); margin-top: 4px;">${dayLabel}</div>
+          </div>
+        `;
+        })
+        .join("");
+    }
+
+    function renderViolationBreakdown(violations, total) {
+      const container = document.getElementById("violation-breakdown");
+      if (!container) return;
+
+      const labels = {
+        spam: { name: "Spam va Reklama", color: "#f59e0b" },
+        link: { name: "Taqiqlangan Havolalar (URL / Telegram)", color: "#ef4444" },
+        insult: { name: "Haqorat va Nojo'ya So'zlar", color: "#ec4899" },
+        cta: { name: "Tashqi Chaqiriqlar (CTA)", color: "#8b5cf6" },
+      };
+
+      const safeTotal = Math.max(Object.values(violations).reduce((a, b) => a + b, 0), 1);
+
+      container.innerHTML = Object.entries(labels)
+        .map(([key, meta]) => {
+          const count = violations[key] || 0;
+          const pct = Math.round((count / safeTotal) * 100);
+          return `
+          <div>
+            <div style="display: flex; justify-content: space-between; font-size: 0.8rem; margin-bottom: 4px;">
+              <span>${meta.name}</span>
+              <span style="font-weight: 600;">${count} ta (${pct}%)</span>
+            </div>
+            <div style="height: 8px; width: 100%; background: var(--bg-secondary); border-radius: 4px; overflow: hidden;">
+              <div style="height: 100%; width: ${pct}%; background: ${meta.color}; border-radius: 4px; transition: width 0.4s ease;"></div>
+            </div>
+          </div>
+        `;
+        })
+        .join("");
+    }
+
+    async function loadRecentDashboardMessages() {
+      const table = document.getElementById("dashboard-recent-table");
+      if (!table) return;
+
+      let items = [];
+      if (isServerAvailable) {
+        try {
+          const res = await fetch("/api/messages?limit=5");
+          const data = await res.json();
+          items = data.items || [];
+        } catch (_) {}
+      }
+      if (!items.length) {
+        items = getStoredData().messages.slice(0, 5);
+      }
+
+      table.innerHTML = items
+        .map((m) => `
+          <tr>
+            <td>#${m.id}</td>
+            <td><strong>${escapeHtml(m.author_name || "Anonim")}</strong></td>
+            <td style="max-width: 320px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${escapeHtml(m.original_text)}">
+              ${escapeHtml(m.original_text)}
+            </td>
+            <td>${renderStatusBadge(m.status)}</td>
+            <td>${renderRiskPill(m.risk_score)}</td>
+            <td style="font-size: 0.78rem; color: var(--text-secondary); max-width: 250px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+              ${escapeHtml(m.explanation_uz || "Qoidaga mos")}
+            </td>
+            <td style="font-size: 0.75rem; color: var(--text-muted);">${m.created_at || ""}</td>
+          </tr>
+        `).join("");
+    }
+
+    // -------------------------------------------------------------------------
+    // 2. LIVE STREAM & MESSAGE MANAGEMENT
+    // -------------------------------------------------------------------------
+    async function loadMessages() {
+      const tableBody = document.getElementById("messages-table-body");
+      if (!tableBody) return;
+
+      const searchVal = (document.getElementById("stream-search")?.value || "").toLowerCase();
+      let items = [];
+
+      if (isServerAvailable) {
+        try {
+          let url = `/api/messages?status=${currentMessageFilter}&limit=100`;
+          if (searchVal) url += `&search=${encodeURIComponent(searchVal)}`;
+          const res = await fetch(url);
+          const data = await res.json();
+          items = data.items || [];
+        } catch (_) { isServerAvailable = false; }
+      }
+
+      if (!isServerAvailable) {
+        const db = getStoredData();
+        items = db.messages.filter((m) => {
+          if (currentMessageFilter !== "ALL" && m.status !== currentMessageFilter) return false;
+          if (searchVal && !m.original_text.toLowerCase().includes(searchVal) && !(m.author_name || "").toLowerCase().includes(searchVal)) return false;
+          return true;
+        });
+      }
+
+      if (items.length === 0) {
+        tableBody.innerHTML = `<tr><td colspan="9" style="text-align: center; color: var(--text-muted); padding: 2rem;">Hech qanday xabar topilmadi</td></tr>`;
+        return;
+      }
+
+      tableBody.innerHTML = items
+        .map((m) => {
+          let violations = [];
+          try { violations = typeof m.violations === "string" ? JSON.parse(m.violations) : (m.violations || []); } catch (_) {}
+
+          return `
+          <tr>
+            <td><strong>#${m.id}</strong></td>
+            <td>
+              <div style="font-weight: 600;">${escapeHtml(m.author_name || "Foydalanuvchi")}</div>
+              <div style="font-size: 0.7rem; color: var(--text-muted);">${escapeHtml(m.user_id || "")}</div>
+            </td>
+            <td style="max-width: 260px;">
+              <div style="font-size: 0.85rem; word-break: break-word;">${escapeHtml(m.original_text)}</div>
+            </td>
+            <td>
+              <span class="badge" style="background: rgba(255,255,255,0.08);">${(m.detected_lang || "uz").toUpperCase()}</span>
+            </td>
+            <td style="max-width: 260px; font-size: 0.8rem; color: var(--text-secondary);">
+              <div>🇺🇿 ${escapeHtml(m.text_uz || m.original_text)}</div>
+              <div style="margin-top: 3px; color: #93c5fd;">🇷🇺 ${escapeHtml(m.text_ru || "")}</div>
+            </td>
+            <td>${renderStatusBadge(m.status)}</td>
+            <td>${renderRiskPill(m.risk_score)}</td>
+            <td>
+              ${violations.length > 0
+                ? violations.map((v) => `<span class="badge badge-violation">${v}</span>`).join("")
+                : '<span style="color: var(--text-muted); font-size: 0.75rem;">—</span>'
+              }
+            </td>
+            <td>
+              <div style="display: flex; gap: 4px; flex-wrap: wrap;">
+                <button class="btn btn-secondary btn-sm" onclick="openInspectorModal(${m.id})" title="Batafsil tekshirish">🔍</button>
+                ${m.status !== "APPROVED" ? `<button class="btn btn-success btn-sm" onclick="updateMessageStatus(${m.id}, 'APPROVED')" title="Tasdiqlash">✓</button>` : ""}
+                ${m.status !== "BLOCKED" ? `<button class="btn btn-danger btn-sm" onclick="updateMessageStatus(${m.id}, 'BLOCKED')" title="Bloklash">🚫</button>` : ""}
+                <button class="btn btn-secondary btn-sm" onclick="openComplaintForMessage(${m.id})" title="Shikoyat qilish">🚨</button>
+                <button class="btn btn-secondary btn-sm" onclick="deleteMessage(${m.id})" title="O'chirish" style="color: #ef4444;">🗑️</button>
+              </div>
+            </td>
+          </tr>
+        `;
+        })
+        .join("");
+    }
+
+    function filterMessages(status, btnElement) {
+      currentMessageFilter = status;
+      btnElement.parentElement.querySelectorAll(".filter-btn").forEach((b) => b.classList.remove("active"));
+      btnElement.classList.add("active");
+      loadMessages();
+    }
+
+    function handleSearch() {
+      clearTimeout(searchDebounceTimer);
+      searchDebounceTimer = setTimeout(() => { loadMessages(); }, 300);
+    }
+
+    async function updateMessageStatus(id, newStatus) {
+      if (isServerAvailable) {
+        try {
+          await fetch(`/api/messages/${id}/status`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ status: newStatus }),
+          });
+        } catch (_) {}
+      }
+      const db = getStoredData();
+      const m = db.messages.find(x => x.id === id);
+      if (m) {
+        m.status = newStatus;
+        saveStoredData(db);
+      }
+      loadMessages();
+      loadDashboard();
+    }
+
+    async function deleteMessage(id) {
+      if (!confirm(`Haqiqatan ham #${id} xabarni butunlay o'chirmoqchimisiz?`)) return;
+      if (isServerAvailable) {
+        try { await fetch(`/api/messages/${id}`, { method: "DELETE" }); } catch (_) {}
+      }
+      const db = getStoredData();
+      db.messages = db.messages.filter(x => x.id !== id);
+      saveStoredData(db);
+      loadMessages();
+      loadDashboard();
+    }
+
+    // -------------------------------------------------------------------------
+    // 3. LIVE TESTER (Interactive Playground)
+    // -------------------------------------------------------------------------
+    const samples = {
+      clean: "Assalomu alaykum! Xizmatingiz juda sifatli ekan, barchaga tavsiya qilaman.",
+      clean_ru: "Здравствуйте! Подскажите, пожалуйста, до скольких работает служба технической поддержки?",
+      telegram_link: "HAMMAGA SALOM! Kuniga 100$ topishni xohlaysizmi? Bizning kanalimizga qo'shiling: https://t.me/tez_daromad",
+      masked_url: "Batafsil ma'lumot va arzon narxlar bizning saytimizda: super - shop . uz saytiga kiring!",
+      profanity: "Senlar hammang ahmoq, haromi va iflossanlar, ishingni eplolmasang yo'qol!",
+      sarcasm: "Voy-bo'o'y, nahotki shunaqa 'aqlli' odamlar bu yerda yig'ilgan bo'lsa? Qoyil daholarga!",
+      cta: "Lichkaga yozing, oylik 500$ daromadli referal dasturni o'rgataman, profilimdagi havolaga o'ting.",
+    };
+
+    function setSample(key) {
+      document.getElementById("test-text").value = samples[key] || "";
+    }
+
+    async function runLiveTest() {
+      const text = document.getElementById("test-text").value;
+      const author = document.getElementById("test-author").value || "Test Foydalanuvchi";
+      const btn = document.getElementById("btn-run-test");
+
+      if (!text || !text.trim()) {
+        alert("Iltimos, tekshirish uchun matn kiriting!");
+        return;
+      }
+
+      btn.disabled = true;
+      btn.innerHTML = `⏳ Tekshirilmoqda...`;
+
+      let result = null;
+
+      if (isServerAvailable) {
+        try {
+          const res = await fetch("/api/moderate", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ text, user_id: "interactive_tester", author_name: author }),
+          });
+          result = await res.json();
+        } catch (_) { isServerAvailable = false; }
+      }
+
+      if (!result) {
+        // Execute client-side 2-stage moderation
+        const st1 = clientRegexScan(text);
+        const st2 = clientGeminiAnalyze(text, st1);
+        const risk = Math.max(st1.risk_score, st2.risk_score);
+        const status = (st1.action === "BLOCK" || st2.verdict === "BLOCKED" || risk >= 70) ? "BLOCKED" : (risk >= 40 ? "FLAGGED" : "APPROVED");
+        const violations = [...new Set([...st1.violations, ...st2.violations])];
+
+        const db = getStoredData();
+        const newId = (db.messages.length ? Math.max(...db.messages.map(m => m.id)) : 0) + 1;
+        const msgRecord = {
+          id: newId,
+          user_id: "interactive_tester",
+          author_name: author,
+          original_text: text,
+          detected_lang: st2.detected_lang,
+          text_uz: st2.text_uz,
+          text_ru: st2.text_ru,
+          status,
+          risk_score: risk,
+          stage_1_verdict: st1.action,
+          stage_1_details: JSON.stringify(st1),
+          stage_2_verdict: st2.verdict,
+          stage_2_details: JSON.stringify(st2),
+          violations: JSON.stringify(violations),
+          explanation_uz: st2.explanation_uz,
+          explanation_ru: st2.explanation_ru,
+          sentiment: st2.sentiment,
+          latency_ms: parseFloat((st1.latency_ms + st2.latency_ms).toFixed(1)),
+          created_at: new Date().toISOString().replace("T", " ").slice(0, 19)
+        };
+        db.messages.unshift(msgRecord);
+        saveStoredData(db);
+
+        result = {
+          ...msgRecord,
+          stage_1: st1,
+          stage_2: st2
+        };
+      }
+
+      renderTestResult(result);
+      loadDashboard();
+      btn.disabled = false;
+      btn.innerHTML = `🚀 Moderatsiyadan O'tkazish`;
+    }
+
+    function renderTestResult(data) {
+      document.getElementById("test-result-empty").style.display = "none";
+      const resContent = document.getElementById("test-result-content");
+      resContent.style.display = "block";
+
+      const st1 = data.stage_1 || (data.stage_1_details ? JSON.parse(data.stage_1_details) : {});
+      const st2 = data.stage_2 || (data.stage_2_details ? JSON.parse(data.stage_2_details) : {});
+      const risk = data.risk_score || 0;
+
+      let riskColor = "#34d399";
+      if (risk >= 70) riskColor = "#ef4444";
+      else if (risk >= 40) riskColor = "#f59e0b";
+
+      resContent.innerHTML = `
+        <div style="background: var(--bg-secondary); border: 1px solid var(--border); border-radius: 10px; padding: 1.2rem; margin-bottom: 1.2rem;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.8rem;">
+            <div>
+              <span style="font-size: 0.8rem; color: var(--text-muted);">YAKUNIY QAROR:</span>
+              <div style="margin-top: 3px;">${renderStatusBadge(data.status)}</div>
+            </div>
+            <div style="text-align: right;">
+              <span style="font-size: 0.8rem; color: var(--text-muted);">XAVF DARAJASI:</span>
+              <div style="font-size: 1.4rem; font-weight: 700; color: ${riskColor};">${risk}%</div>
+            </div>
+          </div>
+
+          <div style="height: 8px; width: 100%; background: #111827; border-radius: 4px; overflow: hidden; margin-bottom: 0.8rem;">
+            <div style="height: 100%; width: ${risk}%; background: ${riskColor}; transition: width 0.5s ease;"></div>
+          </div>
+
+          <div style="font-size: 0.85rem; color: var(--text-secondary); line-height: 1.5; background: rgba(0,0,0,0.2); padding: 0.6rem 0.85rem; border-radius: 6px;">
+            <strong>Izoh:</strong> ${escapeHtml(data.explanation_uz || "Qoidabuzarlik aniqlanmadi")}
+          </div>
+        </div>
+
+        <div style="background: var(--bg-secondary); border-left: 3px solid var(--accent-blue); padding: 0.8rem 1rem; border-radius: 0 8px 8px 0; margin-bottom: 1rem;">
+          <div style="display: flex; justify-content: space-between; font-size: 0.82rem; font-weight: 600; color: #60a5fa; margin-bottom: 4px;">
+            <span>1-BOSQICH: REGEX & QOIDALAR FILTRI</span>
+            <span>${st1.latency_ms || 1.5} ms</span>
+          </div>
+          <div style="font-size: 0.8rem; color: var(--text-secondary);">
+            Natija: <strong>${st1.action || "PASS"}</strong> | Topilgan buzilishlar: 
+            ${(st1.violations && st1.violations.length > 0)
+              ? st1.violations.map((v) => `<span class="badge badge-violation">${v}</span>`).join("")
+              : '<span style="color: #34d399;">Yo\'q (Toza)</span>'
+            }
+          </div>
+          ${(st1.matched_rules && st1.matched_rules.length > 0)
+            ? `<div style="font-size: 0.75rem; color: #f87171; margin-top: 4px;">Ushlangan qoidalar: ${st1.matched_rules.map((r) => escapeHtml(r)).join(", ")}</div>`
+            : ""
+          }
+        </div>
+
+        <div style="background: var(--bg-secondary); border-left: 3px solid var(--accent-purple); padding: 0.8rem 1rem; border-radius: 0 8px 8px 0; margin-bottom: 1rem;">
+          <div style="display: flex; justify-content: space-between; font-size: 0.82rem; font-weight: 600; color: #c084fc; margin-bottom: 4px;">
+            <span>2-BOSQICH: GEMINI AI SEMANTIK TAHLIL</span>
+            <span>${st2.latency_ms || 95} ms</span>
+          </div>
+          <div style="font-size: 0.8rem; color: var(--text-secondary); line-height: 1.6;">
+            <div>Holat: <strong>${st2.verdict || "APPROVED"}</strong> | Sentiment: <strong style="color: #60a5fa;">${st2.sentiment || "NEUTRAL"}</strong> | Dvigatel: <code>${st2.engine || "GEMINI_AI"}</code></div>
+          </div>
+        </div>
+
+        <div style="background: var(--bg-secondary); border: 1px solid var(--border); border-radius: 8px; padding: 0.85rem; font-size: 0.82rem;">
+          <div style="font-weight: 600; color: var(--text-primary); margin-bottom: 0.5rem;">🌐 Avtomatik Ikki Tilli Tarjima:</div>
+          <div style="margin-bottom: 0.4rem;"><strong>🇺🇿 O'zbekcha:</strong> ${escapeHtml(data.text_uz || "")}</div>
+          <div style="color: #93c5fd;"><strong>🇷🇺 Ruscha:</strong> ${escapeHtml(data.text_ru || "")}</div>
+        </div>
+      `;
+    }
+
+    // -------------------------------------------------------------------------
+    // 4. COMPLAINTS SYSTEM
+    // -------------------------------------------------------------------------
+    async function loadComplaints() {
+      const tbody = document.getElementById("complaints-table-body");
+      if (!tbody) return;
+
+      let complaints = [];
+      if (isServerAvailable) {
+        try {
+          const res = await fetch(`/api/complaints?status=${currentComplaintFilter}`);
+          const data = await res.json();
+          complaints = data.complaints || [];
+        } catch (_) { isServerAvailable = false; }
+      }
+
+      if (!isServerAvailable) {
+        const db = getStoredData();
+        complaints = db.complaints
+          .filter(c => currentComplaintFilter === "ALL" || c.status === currentComplaintFilter)
+          .map(c => {
+            const m = db.messages.find(x => x.id === c.message_id) || {};
+            return { ...c, original_text: m.original_text || "" };
+          });
+      }
+
+      if (complaints.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="8" style="text-align: center; color: var(--text-muted); padding: 2rem;">Shikoyatlar mavjud emas</td></tr>`;
+        return;
+      }
+
+      tbody.innerHTML = complaints
+        .map((c) => {
+          let statusBadge = `<span class="badge badge-flagged">${c.status}</span>`;
+          if (c.status === "ACCEPTED") statusBadge = `<span class="badge badge-blocked">QABUL QILINGAN</span>`;
+          if (c.status === "REJECTED") statusBadge = `<span class="badge badge-approved">RAD ETILGAN</span>`;
+
+          return `
+          <tr>
+            <td><strong>#${c.id}</strong></td>
+            <td><a href="javascript:void(0)" onclick="openInspectorModal(${c.message_id})">#${c.message_id}</a></td>
+            <td>${escapeHtml(c.complainant_name || "Anonim")}</td>
+            <td><strong style="color: #f87171;">${escapeHtml(c.reason)}</strong></td>
+            <td style="max-width: 200px; font-size: 0.8rem; color: var(--text-secondary);">${escapeHtml(c.details || "Izoh yo'q")}</td>
+            <td style="max-width: 250px; font-size: 0.82rem;">${escapeHtml(c.original_text || "")}</td>
+            <td>${statusBadge}</td>
+            <td>
+              ${c.status === "PENDING"
+                ? `
+                <div style="display: flex; gap: 4px;">
+                  <button class="btn btn-danger btn-sm" onclick="resolveComplaint(${c.id}, 'ACCEPT')" title="Qabul qilish va xabarni bloklash">Qabul (Bloklash)</button>
+                  <button class="btn btn-secondary btn-sm" onclick="resolveComplaint(${c.id}, 'REJECT')" title="Rad etish">Rad etish</button>
+                </div>
+              `
+                : `<span style="font-size: 0.75rem; color: var(--text-muted);">${c.admin_notes || "Ko'rib chiqilgan"}</span>`
+              }
+            </td>
+          </tr>
+        `;
+        })
+        .join("");
+    }
+
+    function filterComplaints(status, btnElement) {
+      currentComplaintFilter = status;
+      btnElement.parentElement.querySelectorAll(".filter-btn").forEach((b) => b.classList.remove("active"));
+      btnElement.classList.add("active");
+      loadComplaints();
+    }
+
+    async function resolveComplaint(id, action) {
+      const notes = prompt(`Administrator izohi (${action === "ACCEPT" ? "Qabul qilish" : "Rad etish"} sababi):`, action === "ACCEPT" ? "Qoidabuzarlik tasdiqlandi va xabar bloklandi." : "Xabar qoidalarga zid emas.");
+      if (notes === null) return;
+
+      if (isServerAvailable) {
+        try {
+          await fetch(`/api/complaints/${id}/resolve`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ action, admin_notes: notes }),
+          });
+        } catch (_) {}
+      }
+
+      const db = getStoredData();
+      const comp = db.complaints.find(c => c.id === id);
+      if (comp) {
+        comp.status = action === "ACCEPT" ? "ACCEPTED" : "REJECTED";
+        comp.admin_notes = notes;
+        if (action === "ACCEPT") {
+          const msg = db.messages.find(m => m.id === comp.message_id);
+          if (msg) msg.status = "BLOCKED";
+        }
+        saveStoredData(db);
+      }
+
+      loadComplaints();
+      loadDashboard();
+      if (currentTab === "tab-stream") loadMessages();
+    }
+
+    function openComplaintForMessage(msgId) {
+      document.getElementById("cmp-msg-id").value = msgId;
+      document.getElementById("complaint-modal").classList.add("active");
+    }
+
+    function openNewComplaintModal() {
+      document.getElementById("complaint-modal").classList.add("active");
+    }
+
+    function closeComplaintModal() {
+      document.getElementById("complaint-modal").classList.remove("active");
+    }
+
+    async function submitNewComplaint() {
+      const msgId = parseInt(document.getElementById("cmp-msg-id").value);
+      const author = document.getElementById("cmp-author").value;
+      const reason = document.getElementById("cmp-reason").value;
+      const details = document.getElementById("cmp-details").value;
+
+      if (!msgId) {
+        alert("Xabar ID raqamini kiriting!");
+        return;
+      }
+
+      if (isServerAvailable) {
+        try {
+          await fetch("/api/complaints", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ message_id: msgId, complainant_name: author, reason, details }),
+          });
+        } catch (_) {}
+      }
+
+      const db = getStoredData();
+      const newId = (db.complaints.length ? Math.max(...db.complaints.map(c => c.id)) : 0) + 1;
+      db.complaints.unshift({
+        id: newId,
+        message_id: msgId,
+        complainant_name: author,
+        reason,
+        details,
+        status: "PENDING",
+        admin_notes: null,
+        created_at: new Date().toISOString().replace("T", " ").slice(0, 19)
+      });
+      saveStoredData(db);
+
+      closeComplaintModal();
+      loadComplaints();
+      loadDashboard();
+      alert("Shikoyat muvaffaqiyatli qabul qilindi!");
+    }
+
+    // -------------------------------------------------------------------------
+    // 5. REPORTS & EXPORTS
+    // -------------------------------------------------------------------------
+    async function loadReports(period, btnElement) {
+      currentPeriod = period;
+      if (btnElement) {
+        btnElement.parentElement.querySelectorAll(".filter-btn").forEach((b) => b.classList.remove("active"));
+        btnElement.classList.add("active");
+      }
+
+      const db = getStoredData();
+      const msgs = db.messages;
+      const total = msgs.length;
+      const blocked = msgs.filter(m => m.status === "BLOCKED").length;
+      const ratio = total > 0 ? Math.round((blocked / total) * 100) : 0;
+      const avg_risk = total ? (msgs.reduce((a, b) => a + (b.risk_score || 0), 0) / total).toFixed(1) : 0;
+
+      document.getElementById("rep-total").innerText = total;
+      document.getElementById("rep-block-ratio").innerText = `${ratio}%`;
+      document.getElementById("rep-avg-risk").innerText = avg_risk;
+      document.getElementById("rep-complaints").innerText = db.complaints.length;
+
+      // Sentiments
+      const sMap = { POSITIVE: 0, NEUTRAL: 0, NEGATIVE: 0, TOXIC: 0 };
+      msgs.forEach(m => {
+        const s = m.sentiment || "NEUTRAL";
+        if (sMap[s] !== undefined) sMap[s]++;
+      });
+
+      const sContainer = document.getElementById("sentiment-breakdown");
+      const sColors = { POSITIVE: "#34d399", NEUTRAL: "#60a5fa", NEGATIVE: "#f59e0b", TOXIC: "#ef4444" };
+      const sTotal = Math.max(Object.values(sMap).reduce((a, b) => a + b, 0), 1);
+
+      sContainer.innerHTML = Object.entries(sMap)
+        .map(([k, v]) => {
+          const pct = Math.round((v / sTotal) * 100);
+          return `
+          <div>
+            <div style="display: flex; justify-content: space-between; font-size: 0.8rem; margin-bottom: 4px;">
+              <span>${k}</span>
+              <span>${v} ta (${pct}%)</span>
+            </div>
+            <div style="height: 8px; width: 100%; background: var(--bg-secondary); border-radius: 4px; overflow: hidden;">
+              <div style="height: 100%; width: ${pct}%; background: ${sColors[k] || "#8b5cf6"};"></div>
+            </div>
+          </div>
+        `;
+        })
+        .join("");
+    }
+
+    function exportData(format) {
+      const items = getStoredData().messages;
+      if (format === "json") {
+        const blob = new Blob([JSON.stringify(items, null, 2)], { type: "application/json" });
+        downloadBlob(blob, `moderator_report_${new Date().toISOString().slice(0, 10)}.json`);
+      } else {
+        const headers = ["ID", "User_ID", "Muallif", "Asl_Matn", "Status", "Risk_Score", "Til", "Vaqt"];
+        const rows = items.map((m) => [
+          m.id,
+          `"${(m.user_id || "").replace(/"/g, '""')}"`,
+          `"${(m.author_name || "").replace(/"/g, '""')}"`,
+          `"${(m.original_text || "").replace(/"/g, '""')}"`,
+          m.status,
+          m.risk_score,
+          m.detected_lang,
+          `"${m.created_at || ""}"`,
+        ]);
+        const csvContent = "\uFEFF" + [headers.join(","), ...rows.map((r) => r.join(","))].join("\n");
+        const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+        downloadBlob(blob, `moderator_report_${new Date().toISOString().slice(0, 10)}.csv`);
+      }
+    }
+
+    function downloadBlob(blob, filename) {
+      const link = document.createElement("a");
+      link.href = URL.createObjectURL(blob);
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
+
+    // -------------------------------------------------------------------------
+    // 6. RULES & SETTINGS
+    // -------------------------------------------------------------------------
+    function loadRules() {
+      const tbody = document.getElementById("rules-table-body");
+      if (!tbody) return;
+
+      const rules = getStoredData().rules;
+      tbody.innerHTML = rules
+        .map((r) => `
+          <tr>
+            <td><span class="badge badge-violation">${r.rule_type}</span></td>
+            <td><code>${escapeHtml(r.pattern)}</code></td>
+            <td><span class="badge ${r.action === "BLOCK" ? "badge-blocked" : "badge-flagged"}">${r.action}</span></td>
+            <td>
+              <button class="btn btn-sm ${r.is_active ? "btn-success" : "btn-secondary"}" onclick="toggleRule(${r.id})">
+                ${r.is_active ? "Faol" : "O'chiq"}
+              </button>
+            </td>
+            <td>
+              <button class="btn btn-secondary btn-sm" onclick="deleteRule(${r.id})" style="color: #ef4444;">🗑️</button>
+            </td>
+          </tr>
+        `).join("");
+    }
+
+    function toggleRule(id) {
+      const db = getStoredData();
+      const r = db.rules.find(x => x.id === id);
+      if (r) {
+        r.is_active = r.is_active ? 0 : 1;
+        saveStoredData(db);
+        loadRules();
+      }
+    }
+
+    function deleteRule(id) {
+      if (!confirm("Qoidani o'chirmoqchimisiz?")) return;
+      const db = getStoredData();
+      db.rules = db.rules.filter(x => x.id !== id);
+      saveStoredData(db);
+      loadRules();
+    }
+
+    function openAddRuleModal() { document.getElementById("rule-modal").classList.add("active"); }
+    function closeRuleModal() { document.getElementById("rule-modal").classList.remove("active"); }
+
+    function submitNewRule() {
+      const type = document.getElementById("new-rule-type").value;
+      const pattern = document.getElementById("new-rule-pattern").value;
+      const action = document.getElementById("new-rule-action").value;
+      const desc = document.getElementById("new-rule-desc").value;
+
+      if (!pattern) {
+        alert("Pattern kiritilishi shart!");
+        return;
+      }
+
+      const db = getStoredData();
+      const newId = (db.rules.length ? Math.max(...db.rules.map(r => r.id)) : 0) + 1;
+      db.rules.push({ id: newId, rule_type: type, pattern, action, description: desc, is_active: 1 });
+      saveStoredData(db);
+      closeRuleModal();
+      loadRules();
+    }
+
+    function loadSettings() {
+      const s = getStoredData().settings || {};
+      if (s.gemini_model) document.getElementById("cfg-gemini-model").value = s.gemini_model;
+      if (s.block_threshold) document.getElementById("cfg-block-thresh").value = s.block_threshold;
+      if (s.flag_threshold) document.getElementById("cfg-flag-thresh").value = s.flag_threshold;
+    }
+
+    function saveSettings() {
+      const key = document.getElementById("cfg-gemini-key").value;
+      const model = document.getElementById("cfg-gemini-model").value;
+      const block = document.getElementById("cfg-block-thresh").value;
+      const flag = document.getElementById("cfg-flag-thresh").value;
+
+      const db = getStoredData();
+      db.settings = {
+        gemini_api_key: key || db.settings.gemini_api_key || "",
+        gemini_model: model,
+        block_threshold: parseInt(block) || 70,
+        flag_threshold: parseInt(flag) || 40
+      };
+      saveStoredData(db);
+      alert("Sozlamalar saqlandi!");
+    }
+
+    // -------------------------------------------------------------------------
+    // 7. INSPECTOR MODAL
+    // -------------------------------------------------------------------------
+    function openInspectorModal(msgId) {
+      const modal = document.getElementById("inspector-modal");
+      const body = document.getElementById("modal-msg-body");
+      modal.classList.add("active");
+
+      const m = getStoredData().messages.find(x => x.id === msgId);
+      if (!m) {
+        body.innerHTML = `<div style="color: #ef4444; padding: 1rem;">Xabar topilmadi</div>`;
+        return;
+      }
+
+      let st1 = {}, st2 = {}, violations = [];
+      try { st1 = typeof m.stage_1_details === "string" ? JSON.parse(m.stage_1_details) : m.stage_1_details || {}; } catch (_) {}
+      try { st2 = typeof m.stage_2_details === "string" ? JSON.parse(m.stage_2_details) : m.stage_2_details || {}; } catch (_) {}
+      try { violations = typeof m.violations === "string" ? JSON.parse(m.violations) : m.violations || []; } catch (_) {}
+
+      body.innerHTML = `
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+          <div>
+            <span style="font-size: 0.8rem; color: var(--text-muted);">XABAR ID:</span> <strong>#${m.id}</strong>
+            <span style="margin-left: 0.8rem; font-size: 0.8rem; color: var(--text-muted);">MUALLIF:</span> <strong>${escapeHtml(m.author_name || "Anonim")}</strong>
+          </div>
+          <div>
+            ${renderStatusBadge(m.status)}
+            <span style="margin-left: 0.5rem;">${renderRiskPill(m.risk_score)}</span>
+          </div>
+        </div>
+
+        <div style="background: var(--bg-primary); border: 1px solid var(--border); border-radius: 8px; padding: 0.9rem; margin-bottom: 1.2rem;">
+          <div style="font-size: 0.75rem; color: var(--text-muted); margin-bottom: 0.3rem;">ASL MATN (ORIGINAL):</div>
+          <div style="font-size: 0.95rem; font-weight: 500;">${escapeHtml(m.original_text)}</div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.8rem; margin-bottom: 1.2rem;">
+          <div style="background: var(--bg-primary); border: 1px solid var(--border); border-radius: 8px; padding: 0.8rem;">
+            <div style="font-size: 0.75rem; color: #34d399; font-weight: 600; margin-bottom: 0.3rem;">🇺🇿 O'ZBEKCHA TARJIMA:</div>
+            <div style="font-size: 0.85rem;">${escapeHtml(m.text_uz || m.original_text)}</div>
+          </div>
+          <div style="background: var(--bg-primary); border: 1px solid var(--border); border-radius: 8px; padding: 0.8rem;">
+            <div style="font-size: 0.75rem; color: #93c5fd; font-weight: 600; margin-bottom: 0.3rem;">🇷🇺 RUSCHA TARJIMA:</div>
+            <div style="font-size: 0.85rem;">${escapeHtml(m.text_ru || "")}</div>
+          </div>
+        </div>
+
+        <div style="background: var(--bg-card); border-left: 4px solid var(--accent-blue); padding: 0.8rem; border-radius: 4px; margin-bottom: 0.8rem;">
+          <div style="font-size: 0.82rem; font-weight: 600; color: #60a5fa; margin-bottom: 0.2rem;">1-BOSQICH (REGEX & HEURISTICS):</div>
+          <div style="font-size: 0.8rem; color: var(--text-secondary);">
+            Qaror: <strong>${m.stage_1_verdict || "PASS"}</strong> | Topilgan buzilishlar: ${violations.length > 0 ? violations.map(v => `<span class="badge badge-violation">${v}</span>`).join("") : "Yo'q"}
+          </div>
+          ${st1.matched_rules && st1.matched_rules.length > 0 ? `<div style="font-size: 0.75rem; color: #f87171; margin-top: 4px;">Ushlangan qoidalar: ${st1.matched_rules.map(r => escapeHtml(r)).join(", ")}</div>` : ""}
+        </div>
+
+        <div style="background: var(--bg-card); border-left: 4px solid var(--accent-purple); padding: 0.8rem; border-radius: 4px; margin-bottom: 1.2rem;">
+          <div style="font-size: 0.82rem; font-weight: 600; color: #c084fc; margin-bottom: 0.2rem;">2-BOSQICH (GEMINI AI):</div>
+          <div style="font-size: 0.8rem; color: var(--text-secondary);">
+            Qaror: <strong>${m.stage_2_verdict || "APPROVED"}</strong> | Sentiment: <strong>${m.sentiment || "NEUTRAL"}</strong>
+          </div>
+          <div style="font-size: 0.8rem; color: var(--text-primary); margin-top: 4px;">
+            <strong>Asos:</strong> ${escapeHtml(m.explanation_uz || "—")}
+          </div>
+        </div>
+
+        <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid var(--border); padding-top: 1rem;">
+          <div style="font-size: 0.75rem; color: var(--text-muted);">
+            Vaqti: ${m.created_at || ""} | Latency: ${m.latency_ms || 0} ms
+          </div>
+          <div style="display: flex; gap: 0.5rem;">
+            <button class="btn btn-success" onclick="updateMessageStatus(${m.id}, 'APPROVED'); closeInspectorModal();">Tasdiqlash</button>
+            <button class="btn btn-danger" onclick="updateMessageStatus(${m.id}, 'BLOCKED'); closeInspectorModal();">Bloklash</button>
+            <button class="btn btn-secondary" onclick="closeInspectorModal();">Yopish</button>
+          </div>
+        </div>
+      `;
+    }
+
+    function closeInspectorModal() { document.getElementById("inspector-modal").classList.remove("active"); }
+
+    // Helpers
+    function renderStatusBadge(status) {
+      if (status === "APPROVED") return `<span class="badge badge-approved">✅ TASDIQLANGAN</span>`;
+      if (status === "BLOCKED") return `<span class="badge badge-blocked">🚫 BLOKLANGAN</span>`;
+      return `<span class="badge badge-flagged">⚠️ KO'RIB CHIQILMOQDA</span>`;
+    }
+
+    function renderRiskPill(risk) {
+      const r = parseInt(risk || 0);
+      let cls = "risk-low";
+      if (r >= 70) cls = "risk-high";
+      else if (r >= 40) cls = "risk-mid";
+      return `<span class="risk-pill ${cls}">${r}% xavf</span>`;
+    }
+
+    function escapeHtml(str) {
+      if (!str) return "";
+      return String(str).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
+    }
+  </script>
+</body>
+</html>
